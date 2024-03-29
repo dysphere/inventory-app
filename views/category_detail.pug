@@ -1,0 +1,17 @@
+extends layout
+
+block content
+  h1 Name: #{category.name}
+
+  p #[strong Description:] #{category.description}
+
+  div(style='margin-left:20px;margin-top:20px')
+    h4 Items
+
+    each val in category_items
+      hr
+      p #[strong Name:] #[a(href=val.url) #{val.name}]
+      p #[strong Description:] #{val.description}
+
+    else
+      p There are no items in this category in the inventory.

@@ -1,0 +1,13 @@
+extends layout
+
+block content
+  h1= title
+  p Welcome to #[em Inventory], a very basic Express website!
+
+  h1 Dynamic content
+
+  p The store inventory has the following record counts:
+
+  ul
+    li #[strong Items:] !{item_count}
+    li #[strong Categories:] !{category_count}
