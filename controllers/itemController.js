@@ -5,7 +5,7 @@ const { body, validationResult } = require("express-validator");
 const item = require("../models/item");
 
 exports.index = asyncHandler(async (req, res, next) => {
-    // Get details of books, book instances, authors and genre counts (in parallel)
+    // Get details of category and item counts
     const [
       numCategories,
       numItems,
@@ -98,7 +98,7 @@ exports.item_create_post = [
     // Extract the validation errors from a request.
     const errors = validationResult(req);
 
-    // Create a Book object with escaped and trimmed data.
+    // Create a Item object with escaped and trimmed data.
     const item = new Item({
       name: req.body.name,
       description: req.body.description,
@@ -235,11 +235,11 @@ exports.item_update_post = [
     if (!errors.isEmpty()) {
       // There are errors. Render form again with sanitized values/error messages.
 
-      // Get all authors and genres for form
+      // Get all categories for form
       const allCategories = await Category.find().sort({ name: 1 }).exec();
 
-      // Mark our selected genres as checked.
-      for (const category of allGenres) {
+      // Mark our selected categories as checked.
+      for (const category of allCategories) {
         if (book.category.indexOf(category._id) > -1) {
           category.checked = "true";
         }
