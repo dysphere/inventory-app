@@ -22,7 +22,6 @@ async function uploadToCloudinary(filePath) {
   }
 }
 
-
 exports.index = asyncHandler(async (req, res, next) => {
     // Get details of category and item counts
     const [
@@ -195,11 +194,12 @@ exports.item_update_get = asyncHandler(async (req, res, next) => {
     return next(err);
   }
 
-  // Mark our selected genres as checked.
-  allCategories.forEach((category) => {
-    if (item.category.includes(category._id)) category.checked = "true";
+  const itemCategories = item.category.map(cat => cat._id.toString());
+  allCategories.forEach(cat => {
+    // Mark category as checked if it's one of the item's categories
+    cat.checked = itemCategories.includes(cat._id.toString());
   });
-
+  
   res.render("item_form", {
     title: "Update Item",
     categories: allCategories,
