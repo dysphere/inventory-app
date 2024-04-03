@@ -3,13 +3,16 @@ extends layout
 block content
   h1= title
 
-  form(method='POST')
+  form(method='POST' enctype="multipart/form-data")
     div.form-group
       label(for='name') Name:
       input#name.form-control(type='text', placeholder='Name of item' name='name' required value=(undefined===item ? '' : item.name) )
     div.form-group
+        label(for='image') Image: 
+        input#image.form-control(type='file' name='image')
+    div.form-group
       label(for='description') Description:
-      textarea#description.form-control(placeholder='Description' name='description' required value=(undefined===item ? '' : item.description) )
+      textarea#description.form-control(placeholder='Description' name='description' required)= (undefined === item ? '' : item.description)
     div.form-group
       label(for='price') Price:
       input#isbn.form-control(type='number', placeholder='Price' name='price' step='0.01' value=(undefined===item ? '' : item.price) required)
@@ -21,10 +24,7 @@ block content
       div
         for category in categories
           div(style='display: inline; padding-right:10px;')
-            if category.checked
-              input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id, checked)
-            else
-              input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id)
+            input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id, checked=category.checked ? true : undefined)
             label(for=category._id) &nbsp;#{category.name}
     button.btn.btn-primary(type='submit') Submit
 

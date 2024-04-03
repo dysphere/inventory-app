@@ -2,7 +2,8 @@ extends layout
 
 block content
   h1 Name: #{item.name}
-
+  if item.image
+    img.img-fluid(src=item.image alt='Item Image' style='width:200px;height:200px;')
   p #[strong Description: ] #{item.description}
   p #[strong Price:] $#{item.price}
   p #[strong Number in Stock:] #{item.numberInStock}
@@ -15,3 +16,5 @@ block content
     hr
     p
         a(href=item.url+'/delete') Delete item
+    p
+        a(href=item.url+'/update') Update item

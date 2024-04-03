@@ -2,7 +2,26 @@ const Item = require("../models/item");
 const Category = require("../models/category");
 const asyncHandler = require("express-async-handler");
 const { body, validationResult } = require("express-validator");
-const item = require("../models/item");
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({ 
+  cloud_name: 'djwajeqeu', 
+  api_key: '132935884388799', 
+  api_secret: 'By9oU7B8YIicf-mHHrm1MXL2Irs',
+});
+
+// Utility function to upload image to Cloudinary
+async function uploadToCloudinary(filePath) {
+  if (!filePath) return null;
+  try {
+    const result = await cloudinary.uploader.upload(filePath);
+    return result.url;
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    return null;
+  }
+}
+
 
 exports.index = asyncHandler(async (req, res, next) => {
     // Get details of category and item counts
@@ -63,6 +82,7 @@ exports.item_create_get = asyncHandler(async (req, res, next) => {
 
 // Handle item create on POST.
 exports.item_create_post = [
+
   // Convert the category to an array.
   (req, res, next) => {
     if (!Array.isArray(req.body.category)) {
@@ -92,45 +112,47 @@ exports.item_create_post = [
     .isNumeric({ no_symbols: true })
     .escape(),
   body("category.*").escape(),
-  // Process request after validation and sanitization.
 
-  asyncHandler(async (req, res, next) => {
-    // Extract the validation errors from a request.
+  async (req, res, next) => {
     const errors = validationResult(req);
 
-    // Create a Item object with escaped and trimmed data.
-    const item = new Item({
-      name: req.body.name,
-      description: req.body.description,
-      price: parseFloat(req.body.price),
-      numberInStock: parseInt(req.body.numberInStock, 10),
-      category: req.body.category,
-    });
+    const allCategories = await Category.find().sort({ name: 1 }).exec();
+
+    // In case there are validation errors or not, you always need to check categories
+    // Mark our selected categories as checked. It's important this is done after fetching categories
+    for (let category of allCategories) {
+      category._doc.checked = req.body.category.includes(category._id.toString());
+    }
 
     if (!errors.isEmpty()) {
-      // There are errors. Render form again with sanitized values/error messages.
-
-      // Get all categories for form.
-      const allCategories = await Category.find().sort({ name: 1 }).exec();
-
-      // Mark our selected categories as checked.
-      for (const category of allCategories) {
-        if (book.category.includes(genre._id)) {
-          category.checked = "true";
-        }
-      }
-      res.render("item_form", {
+      // If there are errors, render the form again with error messages
+      return res.render("item_form", {
         title: "Create Item",
         categories: allCategories,
-        item: item,
+        item: req.body, // Pass the previously entered values back to the form
         errors: errors.array(),
       });
-    } else {
-      // Data from form is valid. Save book.
-      await item.save();
-      res.redirect(item.url);
     }
-  }),
+
+    try {
+      // Handle file upload and item creation...
+      const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : null;
+      const item = new Item({
+        name: req.body.name,
+        description: req.body.description,
+        price: parseFloat(req.body.price),
+        numberInStock: parseInt(req.body.numberInStock, 10),
+        category: req.body.category,
+        ...(imageUrl && { image: imageUrl })
+      });
+      
+      await item.save();
+      return res.redirect(item.url);
+    } catch (error) {
+      next(error);
+    }
+  }
+
 ];
 
 // Display item delete form on GET.
@@ -185,13 +207,11 @@ exports.item_update_get = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Handle item update on POST.
 exports.item_update_post = [
   // Convert the category to an array.
   (req, res, next) => {
     if (!Array.isArray(req.body.category)) {
-      req.body.category =
-        typeof req.body.category === "undefined" ? [] : [req.body.category];
+      req.body.category = typeof req.body.category === "undefined" ? [] : [req.body.category];
     }
     next();
   },
@@ -217,45 +237,45 @@ exports.item_update_post = [
     .escape(),
   body("category.*").escape(),
 
-  // Process request after validation and sanitization.
   asyncHandler(async (req, res, next) => {
-    // Extract the validation errors from a request.
     const errors = validationResult(req);
 
+    const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : undefined;
+
     // Create a Item object with escaped/trimmed data and old id.
-    const item = new Item({
+    const itemUpdateData = {
       name: req.body.name,
       description: req.body.description,
       price: parseFloat(req.body.price),
       numberInStock: parseInt(req.body.numberInStock, 10),
       category: typeof req.body.category === "undefined" ? [] : req.body.category,
-      _id: req.params.id, // This is required, or a new ID will be assigned!
-    });
+      ...(imageUrl && { image: imageUrl })
+    };
 
     if (!errors.isEmpty()) {
       // There are errors. Render form again with sanitized values/error messages.
-
-      // Get all categories for form
       const allCategories = await Category.find().sort({ name: 1 }).exec();
 
-      // Mark our selected categories as checked.
-      for (const category of allCategories) {
-        if (book.category.indexOf(category._id) > -1) {
-          category.checked = "true";
-        }
-      }
-      res.render("book_form", {
-        title: "Update Book",
+      // This is required before you mark categories as checked.
+      const itemCategoryIds = itemUpdateData.category.map(cat => cat.toString());
+
+      allCategories.forEach(category => {
+        category.checked = itemCategoryIds.includes(category._id.toString());
+      });
+
+      return res.render("item_form", {
+        title: "Update Item",
         categories: allCategories,
-        item: item,
+        item: itemUpdateData,
         errors: errors.array(),
       });
-      return;
     } else {
       // Data from form is valid. Update the record.
-      const updatedItem = await Item.findByIdAndUpdate(req.params.id, item, {});
-      // Redirect to book detail page.
+      const updatedItem = await Item.findByIdAndUpdate(req.params.id, itemUpdateData, { new: true });
+
+      // Redirect to the updated item detail page.
       res.redirect(updatedItem.url);
     }
   }),
 ];
+
