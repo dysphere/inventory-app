@@ -120,9 +120,14 @@ exports.category_delete_post = asyncHandler(async (req, res, next) => {
     });
     return;
   } else {
+    if (req.body.password === "correcthorsebatterystaple") {
     // Category has no items. Delete object and redirect to the list of categories.
-    await Category.findByIdAndDelete(req.body.categoryid);
-    res.redirect("/inventory/categories");
+      await Category.findByIdAndDelete(req.body.categoryid);
+      res.redirect("/inventory/categories");
+    }
+    else {
+      res.render("admin_confirm")
+    }
   }
 });
 
@@ -177,10 +182,15 @@ exports.category_update_post = [
       });
       return;
     } else {
+      if (req.body.password === "correcthorsebatterystaple") {
       // Data from form is valid. Update the record.
       const updatedCategory = await Category.findByIdAndUpdate(req.params.id, category, {});
       // Redirect to book detail page.
       res.redirect(updatedCategory.url);
+      }
+      else {
+        res.render("admin_confirm");
+      }
     }
   }),
 ];

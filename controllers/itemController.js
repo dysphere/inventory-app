@@ -172,10 +172,14 @@ exports.item_delete_get = asyncHandler(async (req, res, next) => {
 
 // Handle item delete on POST.
 exports.item_delete_post = asyncHandler(async (req, res, next) => {
-  
+    if (req.body.password === "correcthorsebatterystaple") {
     // Delete item
     await Item.findByIdAndDelete(req.body.itemid);
     res.redirect("/inventory/items");
+    }
+    else {
+      res.render("admin_confirm");
+    }
   }
 );
 
@@ -199,7 +203,7 @@ exports.item_update_get = asyncHandler(async (req, res, next) => {
     // Mark category as checked if it's one of the item's categories
     cat.checked = itemCategories.includes(cat._id.toString());
   });
-  
+
   res.render("item_form", {
     title: "Update Item",
     categories: allCategories,
@@ -270,11 +274,16 @@ exports.item_update_post = [
         errors: errors.array(),
       });
     } else {
-      // Data from form is valid. Update the record.
-      const updatedItem = await Item.findByIdAndUpdate(req.params.id, itemUpdateData, { new: true });
+      if (req.body.password === "correcthorsebatterystaple") {
+        // Data from form is valid. Update the record.
+        const updatedItem = await Item.findByIdAndUpdate(req.params.id, itemUpdateData, { new: true });
 
-      // Redirect to the updated item detail page.
-      res.redirect(updatedItem.url);
+        // Redirect to the updated item detail page.
+        res.redirect(updatedItem.url);
+      }
+      else {
+        res.render("admin_confirm");
+      }
     }
   }),
 ];

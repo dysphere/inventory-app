@@ -9,6 +9,9 @@ block content
 
     form(method='POST')
         div.form-group
+            label(for='password') Admin Password:
+            input#password.form-control(name='password')
+        div.form-group
             input#itemid.form-control(type='hidden', name='itemid', value=item._id )
 
         button.btn.btn-primary(type='submit') Delete
