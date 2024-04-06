@@ -4,12 +4,6 @@ const asyncHandler = require("express-async-handler");
 const { body, validationResult } = require("express-validator");
 const cloudinary = require('cloudinary').v2;
 
-cloudinary.config({ 
-  cloud_name: 'djwajeqeu', 
-  api_key: '132935884388799', 
-  api_secret: 'By9oU7B8YIicf-mHHrm1MXL2Irs',
-});
-
 // Utility function to upload image to Cloudinary
 async function uploadToCloudinary(filePath) {
   if (!filePath) return null;
