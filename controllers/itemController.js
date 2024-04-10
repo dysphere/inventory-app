@@ -237,7 +237,7 @@ exports.item_update_post = [
 
   asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
-
+    const allCategories = await Category.find().sort({ name: 1 }).exec();
     const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : undefined;
 
     // Create a Item object with escaped/trimmed data and old id.
@@ -250,16 +250,15 @@ exports.item_update_post = [
       ...(imageUrl && { image: imageUrl })
     };
 
+    // This is required before you mark categories as checked.
+    const itemCategoryIds = itemUpdateData.category.map(cat => cat.toString());
+
+    allCategories.forEach(category => {
+      category.checked = itemCategoryIds.includes(category._id.toString());
+    });
+
     if (!errors.isEmpty()) {
       // There are errors. Render form again with sanitized values/error messages.
-      const allCategories = await Category.find().sort({ name: 1 }).exec();
-
-      // This is required before you mark categories as checked.
-      const itemCategoryIds = itemUpdateData.category.map(cat => cat.toString());
-
-      allCategories.forEach(category => {
-        category.checked = itemCategoryIds.includes(category._id.toString());
-      });
 
       return res.render("item_form", {
         title: "Update Item",
@@ -276,7 +275,13 @@ exports.item_update_post = [
         res.redirect(updatedItem.url);
       }
       else {
-        res.render("admin_confirm");
+        res.render("item_form", {
+          title: "Update Item",
+          categories: allCategories,
+          item: itemUpdateData,
+          errors: errors.array(),
+          invalid_password: true,
+        });
       }
     }
   }),

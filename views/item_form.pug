@@ -30,6 +30,9 @@ block content
       div.form-group
         label(for='password') Admin Password:
         input#password.form-control(name='password')
+    if invalid_password 
+      h1 Invalid Password!
+      p Cannot update or delete with invalid admin password!
     button.btn.btn-primary(type='submit') Submit
 
   if errors
