@@ -24,8 +24,8 @@ block content
       div
         for category in categories
           div(style='display: inline; padding-right:10px;')
-            input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id, checked=category.checked ? true : undefined)
-            label(for=category._id) &nbsp;#{category.name}
+            input.checkbox-input(type='checkbox', name='category', id=category.id, value=category.name, checked=category.checked ? true : undefined)
+            label(for=category.id) &nbsp;#{category.name}
     if item
       div.form-group
         label(for='password') Admin Password:

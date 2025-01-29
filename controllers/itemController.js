@@ -1,5 +1,4 @@
-const Item = require("../models/item");
-const Category = require("../models/category");
+const db = require("../db/queries");
 const asyncHandler = require("express-async-handler");
 const { body, validationResult } = require("express-validator");
 const cloudinary = require('cloudinary').v2;
@@ -22,8 +21,8 @@ exports.index = asyncHandler(async (req, res, next) => {
       numCategories,
       numItems,
     ] = await Promise.all([
-      Category.countDocuments({}).exec(),
-      Item.countDocuments({}).exec(),
+      db.countCategories(),
+      db.countItems(),
     ]);
   
     res.render("index", {
@@ -35,10 +34,7 @@ exports.index = asyncHandler(async (req, res, next) => {
 
 // Display list of all items.
 exports.item_list = asyncHandler(async (req, res, next) => {
-  const allItems = await Item.find({}, "name category")
-    .sort({ name: 1 })
-    .populate("category")
-    .exec();
+  const allItems = await db.getAllItems();
 
   res.render("item_list", { title: "Item List", item_list: allItems });
 });
@@ -46,7 +42,7 @@ exports.item_list = asyncHandler(async (req, res, next) => {
 // Display detail page for a specific item.
 exports.item_detail = asyncHandler(async (req, res, next) => {
   // Get details of item
-  const item = await Item.findById(req.params.id).populate("category").exec();
+  const item = await db.getItem(req.params.id);
 
   if (item === null) {
     // No results.
@@ -65,7 +61,7 @@ exports.item_detail = asyncHandler(async (req, res, next) => {
 // Display item create form on GET.
 exports.item_create_get = asyncHandler(async (req, res, next) => {
   // Get all items and categories
-  const allCategories = await Category.find().sort({ name: 1 }).exec();
+  const allCategories = await db.getAllCategories();
 
   res.render("item_form", {
     title: "Create Item",
@@ -109,7 +105,7 @@ exports.item_create_post = [
   async (req, res, next) => {
     const errors = validationResult(req);
 
-    const allCategories = await Category.find().sort({ name: 1 }).exec();
+    const allCategories = await db.getAllCategories();
 
     // In case there are validation errors or not, you always need to check categories
     // Mark our selected categories as checked. It's important this is done after fetching categories
@@ -130,17 +126,11 @@ exports.item_create_post = [
     try {
       // Handle file upload and item creation...
       const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : null;
-      const item = new Item({
-        name: req.body.name,
-        description: req.body.description,
-        price: parseFloat(req.body.price),
-        numberInStock: parseInt(req.body.numberInStock, 10),
-        category: req.body.category,
-        ...(imageUrl && { image: imageUrl })
-      });
-      
-      await item.save();
-      return res.redirect(item.url);
+
+      await db.createItem(req.body.name, imageUrl, req.body.description, req.body.category, parseFloat(req.body.price), parseInt(req.body.numberInStock));
+
+      const itemId = await db.getCategoryByName(req.body.name);
+      return res.redirect(`/inventory/item/${itemId}`);
     } catch (error) {
       next(error);
     }
@@ -151,7 +141,7 @@ exports.item_create_post = [
 // Display item delete form on GET.
 exports.item_delete_get = asyncHandler(async (req, res, next) => {
   // Get details of item and 
-  const item = await Item.findById(req.params.id).exec();
+  const item =  await db.getItem(req.params.id);
 
   if (item === null) {
     // No results.
@@ -168,7 +158,7 @@ exports.item_delete_get = asyncHandler(async (req, res, next) => {
 exports.item_delete_post = asyncHandler(async (req, res, next) => {
     if (req.body.password === "correcthorsebatterystaple") {
     // Delete item
-    await Item.findByIdAndDelete(req.body.itemid);
+    await db.deleteItem(req.body.itemid);
     res.redirect("/inventory/items");
     }
     else {
@@ -181,8 +171,8 @@ exports.item_delete_post = asyncHandler(async (req, res, next) => {
 exports.item_update_get = asyncHandler(async (req, res, next) => {
   // Get item and categories for form.
   const [item, allCategories] = await Promise.all([
-    Item.findById(req.params.id).populate("category").exec(),
-    Category.find().sort({ name: 1 }).exec(),
+    db.getItem(req.params.id),
+    db.getAllCategories(),
   ]);
 
   if (item === null) {
@@ -192,6 +182,7 @@ exports.item_update_get = asyncHandler(async (req, res, next) => {
     return next(err);
   }
 
+  //refactor into postgresql too? not like 
   const itemCategories = item.category.map(cat => cat._id.toString());
   allCategories.forEach(cat => {
     // Mark category as checked if it's one of the item's categories
@@ -237,7 +228,7 @@ exports.item_update_post = [
 
   asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
-    const allCategories = await Category.find().sort({ name: 1 }).exec();
+    const allCategories = await db.getAllCategories();
     const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : undefined;
 
     // Create a Item object with escaped/trimmed data and old id.
@@ -251,6 +242,7 @@ exports.item_update_post = [
     };
 
     // This is required before you mark categories as checked.
+    // refactor categories ???
     const itemCategoryIds = itemUpdateData.category.map(cat => cat.toString());
 
     allCategories.forEach(category => {
@@ -269,10 +261,11 @@ exports.item_update_post = [
     } else {
       if (req.body.password === "correcthorsebatterystaple") {
         // Data from form is valid. Update the record.
-        const updatedItem = await Item.findByIdAndUpdate(req.params.id, itemUpdateData, { new: true });
+        const itemCategory = await db.getCategoryByName(req.body.category);
+        const updatedItem = await db.updateItem(req.params.id, req.body.name, imageUrl, req.body.description, itemCategory, parseFloat(req.body.price), parseInt(req.body.numberInStock), req.params.id);
 
         // Redirect to the updated item detail page.
-        res.redirect(updatedItem.url);
+        res.redirect(`/inventory/item/${req.params.id}`);
       }
       else {
         res.render("item_form", {
