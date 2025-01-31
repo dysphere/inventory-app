@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Item</title>
+    <title>Inventory</title>
 </head>
 <body>
     <h1><%= title %></h1>
-
     <%- include("partials/errors.ejs") %>
-    <form action="/inventory/item/create" method="post">
+    <form action="/inventory/category/create" method="post">
     <label for="name">Name: </label>
     <input type="text" name="name" id="name" required>
     <label for="description">Description: </label>
@@ -17,6 +16,5 @@
     <button type="submit" class="submitBtn">Add Category</button>
       </form>
       <a href="/">Back to home</a>
-    </ul>
 </body>
 </html>

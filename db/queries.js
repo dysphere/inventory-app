@@ -10,7 +10,7 @@ async function createCategory(name, description) {
   }
 
 async function getCategoryByName(name) {
-    const category = await pool.query("SELECT id FROM category WHERE name=$1", [name]);
+    const category = await pool.query("SELECT * FROM category WHERE name=$1", [name]);
     return category.rows[0].id;
 }
 
@@ -44,13 +44,13 @@ async function createItem(name, image, description, category_id, price, number_i
 }
 
 async function getAllItems() {
-    const {items} = await pool.query("SELECT name FROM category");
-    return items;
+    const items = await pool.query("SELECT * FROM item");
+    return items.rows;
 }
 
 async function getCategoryItems(category_id) {
     const items = await pool.query("SELECT * FROM category WHERE category_id=$1", [category_id]);
-    return items.rows[0];
+    return items.rows;
 }
 
 async function getItem(id) {

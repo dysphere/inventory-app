@@ -44,13 +44,6 @@ exports.item_detail = asyncHandler(async (req, res, next) => {
   // Get details of item
   const item = await db.getItem(req.params.id);
 
-  if (item === null) {
-    // No results.
-    const err = new Error("Item not found");
-    err.status = 404;
-    return next(err);
-  }
-
   res.render("item_detail", {
     title: "Item Detail",
     item: item,
