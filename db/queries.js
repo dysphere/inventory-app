@@ -1,8 +1,8 @@
 const pool = require("./pool");
 
 async function getAllCategories() {
-    const {categories} = await pool.query("SELECT name FROM category");
-    return categories;
+    const  categories  = await pool.query("SELECT * FROM category");
+    return categories.rows;
   }
   
 async function createCategory(name, description) {
@@ -11,7 +11,7 @@ async function createCategory(name, description) {
 
 async function getCategoryByName(name) {
     const category = await pool.query("SELECT id FROM category WHERE name=$1", [name]);
-    return category.rows[0];
+    return category.rows[0].id;
 }
 
 async function getCategory(id) {

@@ -5,7 +5,7 @@ const { body, validationResult } = require("express-validator");
 // Display list of all categories.
 exports.category_list = asyncHandler(async (req, res, next) => {
   const allCategories = await db.getAllCategories();
-
+console.log(allCategories);
   res.render("category_list", { title: "Category List", category_list: allCategories });
 });
 
@@ -55,7 +55,7 @@ exports.category_create_post = [
       // There are errors. Render the form again with sanitized values/error messages.
       res.render("category_form", {
         title: "Create Category",
-        category: category,
+        category: req.body,
         errors: errors.array(),
       });
       return;
@@ -68,8 +68,9 @@ exports.category_create_post = [
         res.redirect(`/inventory/category/${categoryExists}`)
       } else {
         const category = await db.createCategory(req.body.name, req.body.description);
+        const categoryFind = await db.getCategoryByName(req.body.name);
         // New category saved. Redirect to category detail page.
-        res.redirect(`/inventory/category/${categoryExists}`)
+        res.redirect(`/inventory/category/${categoryFind}`)
       }
     }
   }),
