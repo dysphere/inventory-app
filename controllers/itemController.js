@@ -62,18 +62,7 @@ exports.item_create_get = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Handle item create on POST.
-exports.item_create_post = [
-
-  // Convert the category to an array.
-  (req, res, next) => {
-    if (!Array.isArray(req.body.category)) {
-      req.body.category =
-        typeof req.body.category === "undefined" ? [] : [req.body.category];
-    }
-    next();
-  },
-
+const validateItem = [
   // Validate and sanitize fields.
   body("name", "Name must not be empty.")
     .trim()
@@ -94,31 +83,35 @@ exports.item_create_post = [
     .isNumeric({ no_symbols: true })
     .escape(),
   body("category.*").escape(),
+]
+
+// Handle item create on POST.
+exports.item_create_post = [
+
+  validateItem,
 
   async (req, res, next) => {
     const errors = validationResult(req);
 
     const allCategories = await db.getAllCategories();
 
-    // In case there are validation errors or not, you always need to check categories
-    // Mark our selected categories as checked. It's important this is done after fetching categories
-    for (let category of allCategories) {
-      category._doc.checked = req.body.category.includes(category._id.toString());
-    }
-
     if (!errors.isEmpty()) {
       // If there are errors, render the form again with error messages
       return res.render("item_form", {
         title: "Create Item",
         categories: allCategories,
-        item: req.body, // Pass the previously entered values back to the form
         errors: errors.array(),
       });
     }
 
+     // Handle file upload and item creation...
+     const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : null;
+    const { name, description, price, numberInStock } = req.body;
+    await db.createItem(name, imageUrl, description, price, numberInStock);
+    const category_id = await db.getCategoryByName(name);
+    res.redirect(`/inventory/category/${category_id}`);
+
     try {
-      // Handle file upload and item creation...
-      const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : null;
 
       await db.createItem(req.body.name, imageUrl, req.body.description, req.body.category, parseFloat(req.body.price), parseInt(req.body.numberInStock));
 

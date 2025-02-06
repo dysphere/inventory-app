@@ -18,9 +18,6 @@ router.get("/category/create", category_controller.category_create_get);
 // POST request for creating category.
 router.post("/category/create", category_controller.category_create_post);
 
-// GET request to delete category.
-router.get("/category/:id/delete", category_controller.category_delete_get);
-
 // POST request to delete category.
 router.post("/category/:id/delete", category_controller.category_delete_post);
 

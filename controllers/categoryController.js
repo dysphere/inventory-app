@@ -11,18 +11,9 @@ exports.category_list = asyncHandler(async (req, res, next) => {
 // Display detail page for a specific category.
 exports.category_detail = asyncHandler(async (req, res, next) => {
   // Get details of category and all items in it
-  const [category, allItemsInCategory] = await Promise.all([
-    db.getCategory(req.params.id),
-    db.getCategoryItems(req.params.id),
-  ]);
+  const category = await db.getCategory(req.params.id);
+  const allItemsInCategory = await db.getCategoryItems(category.name);
 
-  if (category === null) {
-    // No results.
-    const err = new Error("Category not found");
-    err.status = 404;
-    return next(err);
-  }
-console.log(category, allItemsInCategory);
   res.render("category_detail", {
     title: "Category Detail",
     category: category,
@@ -68,47 +59,10 @@ exports.category_create_post = [
   })
 ];
 
-// Display category delete form on GET.
-exports.category_delete_get = asyncHandler(async (req, res, next) => {
-  // Get details of category and all items in it
-  const [category, allItemsInCategory] = await Promise.all([
-    db.getCategory(req.params.id),
-    db.getCategoryItems(req.params.id),
-  ]);
-
-  res.render("category_delete", {
-    title: "Delete Category",
-    category: category,
-    category_items: allItemsInCategory,
-  });
-});
-
 // Handle category delete on POST.
 exports.category_delete_post = asyncHandler(async (req, res, next) => {
-  // Get details of category and all items in it
-  const [category, allItemsInCategory] = await Promise.all([
-    db.getCategory(req.params.id),
-    db.getCategoryItems(req.params.id),
-  ]);
-
-  if (allItemsInCategory.length > 0) {
-    // Category has items. Render in same way as for GET route.
-    res.render("category_delete", {
-      title: "Delete Category",
-      category: category,
-      category_items: allItemsInCategory,
-    });
-    return;
-  } else {
-    if (req.body.password === "correcthorsebatterystaple") {
-    // Category has no items. Delete object and redirect to the list of categories.
-      await db.deleteItem(req.body.categoryid);
-      res.redirect("/inventory/categories");
-    }
-    else {
-      res.render("admin_confirm")
-    }
-  }
+  await db.deleteCategory(req.params.id);
+  res.redirect("/");
 });
 
 // Display category update form on GET.
@@ -116,7 +70,7 @@ exports.category_update_get = asyncHandler(async (req, res, next) => {
   // Get category for form.
   const category = await db.getCategory(req.params.id);
 
-  res.render("category_form", {
+  res.render("category_update", {
     title: "Update Category",
     category: category,
   });
@@ -136,7 +90,7 @@ exports.category_update_post = [
     if (!errors.isEmpty()) {
       // There are errors. Render form again with sanitized values/error messages.
 
-      res.status(400).render("category_form", {
+      res.status(400).render("category_update", {
         title: "Update Category",
         category: category,
         errors: errors.array(),

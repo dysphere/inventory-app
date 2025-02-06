@@ -10,9 +10,19 @@
 
     <h2><%= category.description %></h2>
     <ul>
-        <% category_items.forEach(item => { %>
-            <li><%= item.name %></li>
-        <% }) %>
+        <% if (category_items.length > 0) { %>
+            <% category_items.forEach(item => { %>
+                <li><%= item.name %></li>
+            <% }) %>
+        <% } else { %>
+            <li>Currently no items in this category</li>
+        <% } %>
     </ul>
+    <a href="/inventory/category/<%= category.id %>/update">Update</a>
+    <% if (category_items.length == 0) { %>
+        <form method="POST" action="/inventory/category/<%= category.id %>/delete">
+            <button type="submit">Delete</button>
+      </form>
+        <% } %>
 </body>
 </html>

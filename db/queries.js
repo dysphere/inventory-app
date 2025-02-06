@@ -48,8 +48,8 @@ async function getAllItems() {
     return items.rows;
 }
 
-async function getCategoryItems(category_id) {
-    const items = await pool.query("SELECT * FROM category WHERE category_id=$1", [category_id]);
+async function getCategoryItems(category) {
+    const items = await pool.query("SELECT * FROM item JOIN category ON item.category_id = category.id WHERE category.name = $1", [category]);
     return items.rows;
 }
 

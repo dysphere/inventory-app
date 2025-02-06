@@ -9,12 +9,24 @@
     <h1><%= title %></h1>
 
     <%- include("partials/errors.ejs") %>
-    <form action="/inventory/item/create" method="post">
+    <form action="/inventory/item/create" enctype="multipart/form-data" method="post">
     <label for="name">Name: </label>
     <input type="text" name="name" id="name" required>
+    <label for="image">Image: </label>
+    <input type="file" class="form-control-file" name="image">
     <label for="description">Description: </label>
     <input type="text" name="description" id="description" required>
-    <button type="submit" class="submitBtn">Add Category</button>
+    <label for="category">Category: </label>
+    <select name="category" id="category">
+        <% categories.forEach(function(category) { %>
+            <option value=<%= category.id %>><%= category.name %></option>
+          <% }); %>
+    </select>
+    <label for="price">Price: </label>
+    <input type="text" name="price" id="price" required>
+    <label for="numberInStock">Number in Stock: </label>
+    <input type="text" name="numberInStock" id="numberInStock" required>
+    <button type="submit" class="submitBtn">Add Item</button>
       </form>
       <a href="/">Back to home</a>
     </ul>
