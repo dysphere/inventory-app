@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item detail</title>
+</head>
+<body>
+    <h1><%= item.name %></h1>
+
+    <h2>Description</h2>
+    <p><%= item.description %></p>
+    <h2>Category</h2>
+    <p><%= category.name %></p>
+
+    <p>Price: <%= item.price %></p>
+    <p>Number in Stock: <%= item.number_in_stock %></p>
+    <a href="/inventory/item/<%= item.id %>/update">Update</a>
+        <form method="POST" action="/inventory/item/<%= item.id %>/delete">
+            <button type="submit">Delete</button>
+      </form>
+</body>
+</html>

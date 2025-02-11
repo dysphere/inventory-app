@@ -37,9 +37,9 @@ async function countCategories() {
     return category_count.rows[0].count;
 }
 
-async function createItem(name, image, description, category_id, price, number_in_stock) {
-    await pool.query("INSERT INTO item (name, image, description, category_id, price, number_in_stock) VALUES ($1, $2, $3, $4, $5, $6)",
-        [name, image, description, category_id, price, number_in_stock]
+async function createItem(name, description, category_id, price, number_in_stock) {
+    await pool.query("INSERT INTO item (name, description, category_id, price, number_in_stock) VALUES ($1, $2, $3, $4, $5)",
+        [name, description, category_id, price, number_in_stock]
     );
 }
 
@@ -58,13 +58,23 @@ async function getItem(id) {
     return item.rows[0];
 }
 
+async function getCategoryOfItem(name) {
+    const category = await pool.query("SELECT category.name, category.description FROM item JOIN category ON item.category_id = category.id WHERE item.name = $1", [name]);
+    return category.rows[0];
+}
+
+async function getItemByName(name) {
+    const item = await pool.query("SELECT * FROM item WHERE name = $1", [name]);
+    return item.rows[0].id;
+}
+
 async function deleteItem(id) {
     await pool.query("DELETE FROM item WHERE id = $1", [id]);
 }
 
-async function updateItem(id, name, image, description, category_id, price, number_in_stock) {
-    await pool.query("UPDATE item SET name=$1, image=$2, description=$3, category_id=$4, price=$5, number_in_stock=$6 WHERE id=$7",
-        [name, image, description, category_id, price, number_in_stock, id]
+async function updateItem(id, name, description, category_id, price, number_in_stock) {
+    await pool.query("UPDATE item SET name=$1, description=$2, category_id=$3, price=$4, number_in_stock=$5 WHERE id=$6",
+        [name, description, category_id, price, number_in_stock, id]
     );
 }
   
@@ -81,6 +91,8 @@ async function updateItem(id, name, image, description, category_id, price, numb
     getAllItems,
     getCategoryItems,
     getItem,
+    getCategoryOfItem,
+    getItemByName,
     deleteItem,
     updateItem
   };

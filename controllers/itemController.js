@@ -1,19 +1,6 @@
 const db = require("../db/queries");
 const asyncHandler = require("express-async-handler");
 const { body, validationResult } = require("express-validator");
-const cloudinary = require('cloudinary').v2;
-
-// Utility function to upload image to Cloudinary
-async function uploadToCloudinary(filePath) {
-  if (!filePath) return null;
-  try {
-    const result = await cloudinary.uploader.upload(filePath);
-    return result.url;
-  } catch (error) {
-    console.error("Cloudinary upload error:", error);
-    return null;
-  }
-}
 
 exports.index = asyncHandler(async (req, res, next) => {
     // Get details of category and item counts
@@ -43,11 +30,12 @@ exports.item_list = asyncHandler(async (req, res, next) => {
 exports.item_detail = asyncHandler(async (req, res, next) => {
   // Get details of item
   const item = await db.getItem(req.params.id);
+  const category = await db.getCategoryOfItem(item.name);
 
   res.render("item_detail", {
     title: "Item Detail",
     item: item,
-
+    category: category,
   });
 });
 
@@ -82,7 +70,6 @@ const validateItem = [
     .isLength({ min: 1 })
     .isNumeric({ no_symbols: true })
     .escape(),
-  body("category.*").escape(),
 ]
 
 // Handle item create on POST.
@@ -104,52 +91,21 @@ exports.item_create_post = [
       });
     }
 
-     // Handle file upload and item creation...
-     const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : null;
-    const { name, description, price, numberInStock } = req.body;
-    await db.createItem(name, imageUrl, description, price, numberInStock);
-    const category_id = await db.getCategoryByName(name);
-    res.redirect(`/inventory/category/${category_id}`);
-
-    try {
-
-      await db.createItem(req.body.name, imageUrl, req.body.description, req.body.category, parseFloat(req.body.price), parseInt(req.body.numberInStock));
-
-      const itemId = await db.getCategoryByName(req.body.name);
-      return res.redirect(`/inventory/item/${itemId}`);
-    } catch (error) {
-      next(error);
-    }
+     // Handle item creation...
+    const { name, description, category, price, numberInStock } = req.body;
+    const price_float = parseFloat(price);
+    const numberInStock_int = parseInt(numberInStock);
+    await db.createItem(name, description, category, price_float, numberInStock_int);
+    const item_id = await db.getItemByName(name);
+    res.redirect(`/inventory/item/${item_id}`);
   }
 
 ];
 
-// Display item delete form on GET.
-exports.item_delete_get = asyncHandler(async (req, res, next) => {
-  // Get details of item and 
-  const item =  await db.getItem(req.params.id);
-
-  if (item === null) {
-    // No results.
-    res.redirect("/inventory/items");
-  }
-
-  res.render("item_delete", {
-    title: "Delete Item",
-    item: item,
-  });
-});
-
 // Handle item delete on POST.
 exports.item_delete_post = asyncHandler(async (req, res, next) => {
-    if (req.body.password === "correcthorsebatterystaple") {
-    // Delete item
-    await db.deleteItem(req.body.itemid);
-    res.redirect("/inventory/items");
-    }
-    else {
-      res.render("admin_confirm");
-    }
+  await db.deleteItem(req.params.id);
+  res.redirect("/inventory/items");
   }
 );
 
@@ -161,21 +117,7 @@ exports.item_update_get = asyncHandler(async (req, res, next) => {
     db.getAllCategories(),
   ]);
 
-  if (item === null) {
-    // No results.
-    const err = new Error("Item not found");
-    err.status = 404;
-    return next(err);
-  }
-
-  //refactor into postgresql too? not like 
-  const itemCategories = item.category.map(cat => cat._id.toString());
-  allCategories.forEach(cat => {
-    // Mark category as checked if it's one of the item's categories
-    cat.checked = itemCategories.includes(cat._id.toString());
-  });
-
-  res.render("item_form", {
+  res.render("item_update", {
     title: "Update Item",
     categories: allCategories,
     item: item,
@@ -183,39 +125,13 @@ exports.item_update_get = asyncHandler(async (req, res, next) => {
 });
 
 exports.item_update_post = [
-  // Convert the category to an array.
-  (req, res, next) => {
-    if (!Array.isArray(req.body.category)) {
-      req.body.category = typeof req.body.category === "undefined" ? [] : [req.body.category];
-    }
-    next();
-  },
 
   // Validate and sanitize fields.
-  body("name", "Name must not be empty.")
-    .trim()
-    .isLength({ min: 1 })
-    .escape(),
-  body("description", "Description must not be empty.")
-    .trim()
-    .isLength({ min: 1 })
-    .escape(),
-  body("price", "Price must not be empty.")
-    .trim()
-    .isLength({ min: 1 })
-    .isNumeric({ no_symbols: false })
-    .escape(),
-  body("numberInStock", "There must be a number in stock.")
-    .trim()
-    .isLength({ min: 1 })
-    .isNumeric({ no_symbols: true })
-    .escape(),
-  body("category.*").escape(),
+  validateItem,
 
   asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
     const allCategories = await db.getAllCategories();
-    const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : undefined;
 
     // Create a Item object with escaped/trimmed data and old id.
     const itemUpdateData = {
@@ -226,14 +142,6 @@ exports.item_update_post = [
       category: typeof req.body.category === "undefined" ? [] : req.body.category,
       ...(imageUrl && { image: imageUrl })
     };
-
-    // This is required before you mark categories as checked.
-    // refactor categories ???
-    const itemCategoryIds = itemUpdateData.category.map(cat => cat.toString());
-
-    allCategories.forEach(category => {
-      category.checked = itemCategoryIds.includes(category._id.toString());
-    });
 
     if (!errors.isEmpty()) {
       // There are errors. Render form again with sanitized values/error messages.
