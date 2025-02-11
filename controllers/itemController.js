@@ -112,15 +112,15 @@ exports.item_delete_post = asyncHandler(async (req, res, next) => {
 // Display item update form on GET.
 exports.item_update_get = asyncHandler(async (req, res, next) => {
   // Get item and categories for form.
-  const [item, allCategories] = await Promise.all([
-    db.getItem(req.params.id),
-    db.getAllCategories(),
-  ]);
+  const item = await db.getItem(req.params.id);
+  const allCategories = await db.getAllCategories();
+  const categoryOfItem = await db.getCategoryOfItem(item.name);
 
   res.render("item_update", {
     title: "Update Item",
     categories: allCategories,
     item: item,
+    item_category: categoryOfItem,
   });
 });
 
@@ -131,46 +131,30 @@ exports.item_update_post = [
 
   asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
-    const allCategories = await db.getAllCategories();
 
-    // Create a Item object with escaped/trimmed data and old id.
-    const itemUpdateData = {
-      name: req.body.name,
-      description: req.body.description,
-      price: parseFloat(req.body.price),
-      numberInStock: parseInt(req.body.numberInStock, 10),
-      category: typeof req.body.category === "undefined" ? [] : req.body.category,
-      ...(imageUrl && { image: imageUrl })
-    };
+    const item = await db.getItem(req.params.id);
+    const allCategories = await db.getAllCategories();
+    const categoryOfItem = await db.getCategoryOfItem(item.name);
 
     if (!errors.isEmpty()) {
       // There are errors. Render form again with sanitized values/error messages.
 
-      return res.render("item_form", {
+      return res.render("item_update", {
         title: "Update Item",
         categories: allCategories,
-        item: itemUpdateData,
+        item: item,
+        item_category: categoryOfItem,
         errors: errors.array(),
       });
-    } else {
-      if (req.body.password === "correcthorsebatterystaple") {
-        // Data from form is valid. Update the record.
-        const itemCategory = await db.getCategoryByName(req.body.category);
-        const updatedItem = await db.updateItem(req.params.id, req.body.name, imageUrl, req.body.description, itemCategory, parseFloat(req.body.price), parseInt(req.body.numberInStock), req.params.id);
-
-        // Redirect to the updated item detail page.
-        res.redirect(`/inventory/item/${req.params.id}`);
-      }
-      else {
-        res.render("item_form", {
-          title: "Update Item",
-          categories: allCategories,
-          item: itemUpdateData,
-          errors: errors.array(),
-          invalid_password: true,
-        });
-      }
     }
+    
+     // Handle item creation...
+     const { name, description, category, price, numberInStock } = req.body;
+     const price_float = parseFloat(price);
+     const numberInStock_int = parseInt(numberInStock);
+     await db.updateItem(req.params.id, name, description, category, price_float, numberInStock_int);
+     const item_id = await db.getItemByName(name);
+     res.redirect(`/inventory/item/${item_id}`);
   }),
 ];
 

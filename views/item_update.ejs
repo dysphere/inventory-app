@@ -9,7 +9,7 @@
     <h1><%= title %></h1>
 
     <%- include("partials/errors.ejs") %>
-    <form action="/inventory/item/create" enctype="multipart/form-data" method="post">
+    <form action="/inventory/item/<%= item.id %>/update" method="post">
     <label for="name">Name: </label>
     <input type="text" name="name" value="<%= item.name %>" id="name" required>
     <label for="description">Description: </label>
@@ -17,14 +17,18 @@
     <label for="category">Category: </label>
     <select name="category" id="category">
         <% categories.forEach(function(category) { %>
-            <option value="<%= category.id %>"><%= category.name %></option>
+            <% if (category.name == item_category.name) { %>
+                <option value="<%= category.id %>" selected><%= category.name %></option>
+              <% } else { %>
+                <option value="<%= category.id %>"><%= category.name %></option>
+              <% } %>
           <% }); %>
     </select>
     <label for="price">Price: </label>
-    <input type="text" name="price" id="price" required>
+    <input type="text" name="price" value="<%= item.price %>" id="price" required>
     <label for="numberInStock">Number in Stock: </label>
-    <input type="text" name="numberInStock" id="numberInStock" required>
-    <button type="submit" class="submitBtn">Add Item</button>
+    <input type="number" name="numberInStock" value="<%= item.number_in_stock %>" id="numberInStock" required>
+    <button type="submit" class="submitBtn">Update Item</button>
       </form>
       <a href="/">Back to home</a>
     </ul>

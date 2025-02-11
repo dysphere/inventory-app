@@ -59,7 +59,7 @@ async function getItem(id) {
 }
 
 async function getCategoryOfItem(name) {
-    const category = await pool.query("SELECT category.name, category.description FROM item JOIN category ON item.category_id = category.id WHERE item.name = $1", [name]);
+    const category = await pool.query("SELECT category.name AS name FROM item JOIN category ON item.category_id = category.id WHERE item.name = $1", [name]);
     return category.rows[0];
 }
 
